@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Кабинеты">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f141a" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<title>Кабинеты ТИС</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: одна колонка-«табло»: панель выбора сверху, ниже лента пар 1–7 с отметкой текущей пары */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f7; --surface:#ffffff; --fg:#17202b; --muted:#5f6b78; --line:#dde3ea;
+  --accent:#1d5fa8; --accent-soft:#e3edf8; --free:#9aa5b1; --now:#c2410c; --now-soft:#fdeee5;
+  --sport:#2f7d4f; --sport-soft:#e2f2e8;
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#171e27; --fg:#e6ebf1; --muted:#97a3b0; --line:#28323e;
+  --accent:#7fb2ec; --accent-soft:#1a2b40; --free:#5d6874; --now:#fb923c; --now-soft:#3a2416;
+  --sport:#6fcf97; --sport-soft:#183324; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#171e27; --fg:#e6ebf1; --muted:#97a3b0; --line:#28323e;
+  --accent:#7fb2ec; --accent-soft:#1a2b40; --free:#5d6874; --now:#fb923c; --now-soft:#3a2416;
+  --sport:#6fcf97; --sport-soft:#183324; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+h1{font-size:1.5rem;font-weight:700;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);font-size:.85rem;margin:2px 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:3px}
+select,button,input[type=date]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+select{min-width:150px;font-weight:600}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.datebox{display:flex;gap:6px;align-items:center}
+.datebox .d{font-family:var(--f-mono);font-variant-numeric:tabular-nums;min-width:9.5em;text-align:center;font-weight:500}
+.grow{flex:1}
+.roomhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.roomhead .r{font-size:2rem;font-weight:700;letter-spacing:-.02em}
+.roomhead .meta{color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:6px}
+.slot{display:grid;grid-template-columns:3.2rem 6.2rem 1fr;gap:10px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.slot.free{background:transparent;border-style:dashed;color:var(--free);padding-block:7px}
+.slot.now{border-color:var(--now);box-shadow:inset 3px 0 0 var(--now)}
+.num{font-family:var(--f-mono);font-weight:500;font-size:1.05rem}
+.num small{display:block;font-size:.65rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.time{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--muted);padding-top:2px}
+.body{min-width:0;display:flex;flex-direction:column;gap:3px}
+.subj{font-weight:600}
+.chip{display:inline-block;font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--accent-soft);color:var(--accent);margin-right:6px;vertical-align:1px}
+.chip.lab{background:var(--sport-soft);color:var(--sport)}
+.chip.nowc{background:var(--now-soft);color:var(--now)}
+.who{color:var(--muted);font-size:.88rem}
+.groups{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);overflow-wrap:anywhere}
+.empty{padding:22px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;color:var(--muted);font-size:.88rem;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop a{color:var(--accent)}
+.status{font-size:.8rem;color:var(--muted)}
+@media (max-width:480px){.slot{grid-template-columns:2.6rem 1fr}.slot .time{grid-column:2}.slot .body{grid-column:1/-1}.datebox .d{min-width:7.5em}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Кабинеты ТИС</h1>
+    <p class="sub">Занятость аудитории на день по расписанию stis.su · СЗ — спортзал</p>
+  </header>
+
+  <div class="panel">
+    <div>
+      <label class="lbl" for="room">Аудитория</label>
+      <select id="room"></select>
+    </div>
+    <div class="grow"></div>
+    <div>
+      <label class="lbl" for="dtp">День</label>
+      <div class="datebox">
+        <button id="prev" aria-label="Предыдущий день">◀</button>
+        <span class="d" id="dlabel"></span>
+        <button id="next" aria-label="Следующий день">▶</button>
+        <button id="today">Сегодня</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="roomhead"><span class="r" id="rname"></span><span class="meta" id="rmeta"></span></div>
+  <div class="list" id="list"></div>
+
+  <div class="drop" id="drop">
+    <div>Если на сайте вышло новое, а здесь ещё нет — можно вручную: скачай файлы с <a href="https://stis.su/schedule" target="_blank" rel="noopener">stis.su/schedule</a> и перетащи сюда (можно все разом).<br><span class="status" id="status"></span></div>
+    <div><input type="file" id="files" multiple accept=".xls,.xlsx" hidden><button id="pick">Выбрать файлы</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const DAYS=["ПОНЕДЕЛЬНИК","ВТОРНИК","СРЕДА","ЧЕТВЕРГ","ПЯТНИЦА","СУББОТА","ВОСКРЕСЕНЬЕ"];
+const WD=["пн","вт","ср","чт","пт","сб","вс"];
+const TYPES={"л":"Лекция","пр":"Практика","лаб":"Лаб."};
+const ROOM_RE=/^[А-ЯЁA-Z]{1,3}(-\d+[А-Яа-яA-Za-z]?)?$/;
+const SHEET_RE=/(\d{1,2})\.(\d{1,2})\s*-\s*(\d{1,2})\.(\d{1,2})/;
+const LS="tis-rooms-v1";
+const $=id=>document.getElementById(id);
+
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+let saved=lsGet(LS)||{};
+let sheets=[];let updated="";
+let day=new Date();day.setHours(0,0,0,0);
+
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const fmt=d=>String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear();
+const wdIdx=d=>(d.getDay()+6)%7;
+
+function allRooms(){
+  const s=new Set();sheets.forEach(sh=>sh.l.forEach(x=>x[7]&&s.add(x[7])));
+  return [...s].sort((a,b)=>{const pa=a.match(/^([^\d-]*)-?(\d*)/),pb=b.match(/^([^\d-]*)-?(\d*)/);return pa[1]===pb[1]?(+pa[2]||0)-(+pb[2]||0):pa[1].localeCompare(pb[1])});
+}
+function lessonsFor(d){
+  const k=iso(d),w=wdIdx(d);let out=[];
+  sheets.forEach(sh=>{if(sh.f<=k&&k<=sh.t)out=out.concat(sh.l.filter(x=>x[0]===w))});
+  return out;
+}
+function coverage(){let m="";sheets.forEach(s=>{if(s.t>m)m=s.t});return m}
+
+function fillRooms(){
+  const sel=$("room"),cur=sel.value||saved.room||"СЗ";
+  sel.innerHTML="";
+  allRooms().forEach(r=>{const o=document.createElement("option");o.value=r;o.textContent=r==="СЗ"?"СЗ (спортзал)":r;sel.appendChild(o)});
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur;
+}
+
+function nowPair(times){
+  const t=new Date();if(iso(t)!==iso(day))return null;
+  const m=t.getHours()*60+t.getMinutes();
+  for(const [p,tm] of Object.entries(times)){
+    const r=tm.match(/(\d+)\.(\d+)-(\d+)\.(\d+)/);if(!r)continue;
+    if(m>=r[1]*60+ +r[2]&&m<=r[3]*60+ +r[4])return +p;
+  }return null;
+}
+
+function render(){
+  const room=$("room").value;
+  $("dlabel").textContent=fmt(day)+" ("+WD[wdIdx(day)]+")";
+  $("rname").textContent=room==="СЗ"?"Спортзал":room;
+  const all=lessonsFor(day);
+  const times={};all.forEach(x=>{if(!times[x[1]])times[x[1]]=x[2]});
+  const byKey=new Map();
+  all.filter(x=>x[7]===room).forEach(x=>{
+    const k=x[1]+"|"+x[5]+"|"+x[6]+"|"+x[4];
+    if(!byKey.has(k))byKey.set(k,{pair:x[1],time:x[2],kind:x[4],subj:x[5],teacher:x[6],groups:[]});
+    const g=byKey.get(k);if(!g.groups.includes(x[3]))g.groups.push(x[3]);
+  });
+  const items=[...byKey.values()].sort((a,b)=>a.pair-b.pair);
+  const list=$("list");list.innerHTML="";
+  const busy=new Set(items.map(i=>i.pair));
+  $("rmeta").textContent=all.length?(items.length?`занято пар: ${busy.size}`:"весь день свободна"):"";
+  if(!all.length){
+    const cov=coverage();
+    list.innerHTML=`<div class="empty">${wdIdx(day)===6?"Воскресенье — занятий нет.":(iso(day)>cov?"Расписание на эту неделю ещё не загружено. Перетащи свежие файлы ниже.":"На этот день в расписании нет занятий.")}</div>`;
+    return;
+  }
+  const np=nowPair(times);
+  const pairs=[...new Set([...Object.keys(times).map(Number),...busy])].sort((a,b)=>a-b);
+  pairs.forEach(p=>{
+    const cur=items.filter(i=>i.pair===p);
+    if(!cur.length){
+      const el=document.createElement("div");el.className="slot free"+(p===np?" now":"");
+      el.innerHTML=`<div class="num">${p}<small>пара</small></div><div class="time">${times[p]||""}</div><div class="body">${p===np?'<span><span class="chip nowc">сейчас</span>свободно</span>':"свободно"}</div>`;
+      list.appendChild(el);return;
+    }
+    cur.forEach(i=>{
+      const el=document.createElement("div");el.className="slot"+(p===np?" now":"");
+      el.innerHTML=`<div class="num">${p}<small>пара</small></div><div class="time">${i.time}</div>
+        <div class="body"><div class="subj">${p===np?'<span class="chip nowc">сейчас</span>':""}${i.kind?`<span class="chip${i.kind==="Лаб."?" lab":""}">${i.kind}</span>`:""}</div>
+        <div class="who"></div><div class="groups"></div></div>`;
+      el.querySelector(".subj").append(i.subj);
+      el.querySelector(".who").textContent=i.teacher;
+      el.querySelector(".groups").textContent=i.groups.join(", ");
+      list.appendChild(el);
+    });
+  });
+}
+
+/* ---------- разбор xls/xlsx с сайта ---------- */
+function parseCell(v){
+  const lines=String(v).split("\n").map(s=>s.trim()).filter(Boolean);
+  const m=lines[0].match(/^(лаб|пр|л)\.\s*(.*)$/);
+  let kind="",subj=lines[0];if(m){kind=TYPES[m[1]];subj=m[2]}
+  const toks=(lines.length>1?lines[lines.length-1]:"").split(/\s+/).filter(Boolean);
+  let room="";if(toks.length&&ROOM_RE.test(toks[toks.length-1]))room=toks.pop();
+  if(lines.length>2)subj+=" "+lines.slice(1,-1).join(" ");
+  return [kind,subj.trim(),toks.join(" "),room];
+}
+function sheetRange(title,ref){
+  const m=title.match(SHEET_RE);if(!m)return null;
+  const [d1,m1,d2,m2]=m.slice(1).map(Number);
+  let y=ref.getFullYear();if(m1>=8&&ref.getMonth()<7)y--;if(m1<8&&ref.getMonth()>=7)y++;
+  const s=new Date(y,m1-1,d1),e=new Date(m2>=m1?y:y+1,m2-1,d2);
+  return [iso(s),iso(e)];
+}
+function parseWorkbook(wb){
+  const out=[];
+  wb.SheetNames.forEach(name=>{
+    const rng=sheetRange(name,new Date());if(!rng)return;
+    const ws=wb.Sheets[name];if(!ws["!ref"])return;
+    const R=XLSX.utils.decode_range(ws["!ref"]);
+    const val=(r,c)=>{const x=ws[XLSX.utils.encode_cell({r,c})];return x&&x.v!=null?String(x.v):""};
+    let hdr=-1;for(let r=0;r<25&&r<=R.e.r;r++)if(val(r,1).trim()==="Пара"){hdr=r;break}
+    if(hdr<0)return;
+    const groups={};for(let c=3;c<=R.e.c;c++){const g=val(hdr,c).trim();if(g)groups[c]=g}
+    const merged={};(ws["!merges"]||[]).forEach(m=>{if(m.s.r>hdr&&m.e.c>m.s.c){const a=[];for(let c=m.s.c;c<=m.e.c;c++)a.push(c);merged[m.s.r+","+m.s.c]=a}});
+    const l=[];let d=null;
+    for(let r=hdr+1;r<=R.e.r;r++){
+      const a=val(r,0).trim().toUpperCase();if(DAYS.includes(a))d=DAYS.indexOf(a);
+      const p=parseInt(val(r,1).trim(),10);if(isNaN(p))continue;
+      const t=val(r,2).trim();
+      for(const c in groups){
+        const v=val(r,+c);if(!v.trim())continue;
+        const [kind,subj,teacher,room]=parseCell(v);
+        (merged[r+","+c]||[+c]).forEach(cc=>{if(groups[cc])l.push([d,p,t,groups[cc],kind,subj,teacher,room])});
+      }
+    }
+    const gs=[...new Set(l.map(x=>x[3]))].sort();
+    out.push({key:name+"|"+gs.join(","),f:rng[0],t:rng[1],l});
+  });
+  return out;
+}
+async function loadFiles(fileList){
+  const files=[...fileList].filter(f=>!/exam|vkr|zaschita/i.test(f.name));
+  if(!files.length)return;
+  $("status").textContent="Читаю файлы…";
+  const map=new Map(sheets.map(s=>[s.key,s]));let n=0,bad=[];
+  for(const f of files){
+    try{const wb=XLSX.read(await f.arrayBuffer(),{type:"array"});const ss=parseWorkbook(wb);if(!ss.length)bad.push(f.name);ss.forEach(s=>map.set(s.key,s));n++}
+    catch(e){bad.push(f.name)}
+  }
+  const cutoff=iso(new Date(Date.now()-35*864e5));
+  sheets=[...map.values()].filter(s=>s.t>=cutoff);
+  fillRooms();render();
+  const c=coverage().split("-").reverse().join(".");
+  $("status").textContent=`Загружено вручную файлов: ${n} (до перезагрузки). Данные до ${c}.`+(bad.length?` Не распознаны: ${bad.join(", ")}`:"");
+}
+
+/* ---------- события ---------- */
+$("room").addEventListener("change",()=>{saved.room=$("room").value;lsSet(LS,saved);render()});
+$("prev").onclick=()=>{day.setDate(day.getDate()-1);render()};
+$("next").onclick=()=>{day.setDate(day.getDate()+1);render()};
+$("today").onclick=()=>{day=new Date();day.setHours(0,0,0,0);render()};
+$("pick").onclick=()=>$("files").click();
+$("files").onchange=e=>loadFiles(e.target.files);
+const dz=$("drop");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("over")}));
+dz.addEventListener("drop",e=>loadFiles(e.dataTransfer.files));
+
+async function loadData(){
+  try{
+    const r=await fetch("data.json?"+Date.now(),{cache:"no-store"});
+    const d=await r.json();sheets=d.sheets;updated=d.updated;lsSet("tis-cache",d);
+  }catch(e){
+    const d=lsGet("tis-cache");if(d){sheets=d.sheets;updated=d.updated+" (нет сети, сохранённая копия)"}
+  }
+  fillRooms();render();
+  $("status").textContent=sheets.length?`Расписание с сайта обновлено ${updated}, есть до ${coverage().split("-").reverse().join(".")}. Обновляется само каждый час.`:"Не удалось загрузить расписание.";
+}
+loadData();
+setInterval(render,60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadData()});
+</script>
+</body>
+</html>
